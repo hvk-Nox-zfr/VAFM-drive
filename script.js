@@ -1,8 +1,18 @@
 const pb = new PocketBase('https://api.vafmlaradio.fr');
 
+// Rôles autorisés à accéder au Drive
+const ALLOWED_ROLES = ['admin', 'journaliste'];
+
 let allMedia = [];
 let currentTypeFilter = 'all';
 let selectedFile = null;
+
+// Vérification si l'utilisateur a un rôle autorisé
+function isUserAuthorized() {
+    if (!pb.authStore.isValid || !pb.authStore.model) return false;
+    const userRole = pb.authStore.model.role;
+    return ALLOWED_ROLES.includes(userRole);
+}
 
 // Récupération automatique du nom de l'utilisateur PocketBase connecté
 function getAuthorName() {
@@ -12,17 +22,25 @@ function getAuthorName() {
     return 'VAFM';
 }
 
-// Vérification de l'authentification au démarrage
+// Vérification de l'authentification et du rôle au démarrage
 function checkAuth() {
     const authScreen = document.getElementById('authScreen');
     const layoutMain = document.getElementById('layoutMain');
     const sidebar = document.getElementById('sidebar');
 
     if (pb.authStore.isValid) {
-        if (authScreen) authScreen.style.display = 'none';
-        if (layoutMain) layoutMain.style.display = 'flex';
-        if (sidebar) sidebar.style.display = 'flex';
-        loadMedia();
+        if (isUserAuthorized()) {
+            if (authScreen) authScreen.style.display = 'none';
+            if (layoutMain) layoutMain.style.display = 'flex';
+            if (sidebar) sidebar.style.display = 'flex';
+            loadMedia();
+        } else {
+            pb.authStore.clear();
+            showToast("Accès refusé : compte non autorisé.");
+            if (authScreen) authScreen.style.display = 'flex';
+            if (layoutMain) layoutMain.style.display = 'none';
+            if (sidebar) sidebar.style.display = 'none';
+        }
     } else {
         if (authScreen) authScreen.style.display = 'flex';
         if (layoutMain) layoutMain.style.display = 'none';
@@ -30,14 +48,22 @@ function checkAuth() {
     }
 }
 
-// Connexion
+// Connexion avec vérification du rôle
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
     try {
-        await pb.collection('users').authWithPassword(email, password);
+        const authData = await pb.collection('users').authWithPassword(email, password);
+        const userRole = authData.record.role;
+
+        if (!ALLOWED_ROLES.includes(userRole)) {
+            pb.authStore.clear();
+            showToast("Accès refusé. Réservé aux journalistes et administrateurs.");
+            return;
+        }
+
         showToast("Connexion réussie !");
         checkAuth();
     } catch (err) {
@@ -367,11 +393,6 @@ function setTab(btn, type) {
     btn.classList.add('active');
     currentTypeFilter = type;
     renderMedia();
-}
-
-function toggleModal(id, show) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.toggle('active', show);
 }
 
 function copyToClipboard(text, msg) {

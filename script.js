@@ -1,4 +1,4 @@
-const pb = new PocketBase('http://api.vafmlaradio.fr');
+const pb = new PocketBase('https://api.vafmlaradio.fr');
 
 let allMedia = [];
 let currentTypeFilter = 'all';

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAFM — Media Drive</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Écran de connexion -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="brand-logo">
+                    <img src="VAFM-logo.png" alt="VAFM" class="header-logo">
+                    <span class="brand-title">Media Drive</span>
+                </div>
+                <h2>Espace Média</h2>
+                <p>Réservé aux journalistes et administrateurs</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginEmail">E-mail ou nom d'utilisateur</label>
+                    <input type="text" id="loginEmail" placeholder="journaliste@vafm.fr" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Mot de passe</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-submit">Se connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sidebar navigation -->
+    <aside id="sidebar">
+        <div class="brand">
+            <div class="brand-logo">
+                <img src="VAFM-logo.png" alt="VAFM" class="header-logo">
+                <span class="brand-title">Media Drive</span>
+            </div>
+        </div>
+        <ul class="nav-list">
+            <li>
+                <button class="nav-item active" onclick="setTab(this, 'all')">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Tous les médias
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="setTab(this, 'photo')">
+                    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Photos
+                </button>
+            </li>
+            <li>
+                <button class="nav-item" onclick="setTab(this, 'video')">
+                    <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                    Vidéos
+                </button>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Déconnexion
+            </button>
+        </div>
+    </aside>
+
+    <!-- Content principal -->
+    <div class="layout-main" id="layoutMain">
+        <header>
+            <div class="header-left">
+                <button class="toggle-btn" onclick="toggleSidebar()" title="Masquer / Afficher le menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="search" id="searchInput" placeholder="Rechercher par titre ou mot-clé..." oninput="renderMedia()">
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <select id="categoryFilter" onchange="renderMedia()">
+                    <option value="">Toutes catégories</option>
+                    <option value="Actu">Actu</option>
+                    <option value="Sport">Sport</option>
+                    <option value="Culture">Culture</option>
+                    <option value="Portrait">Portrait</option>
+                    <option value="Événement">Événement</option>
+                </select>
+
+                <select id="sortOrder" onchange="renderMedia()">
+                    <option value="desc">Plus récents</option>
+                    <option value="asc">Plus anciens</option>
+                </select>
+
+                <button class="btn btn-primary" onclick="toggleModal('uploadModal', true)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Importer
+                </button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <div class="media-grid" id="mediaGrid"></div>
+        </div>
+    </div>
+
+    <!-- Modale d'upload -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>Ajouter un média</h3>
+                <button class="btn btn-xs" onclick="closeUploadModal()">✕</button>
+            </div>
+            <form id="uploadForm" onsubmit="handleUpload(event)">
+                <div class="dropzone" id="dropzone" onclick="document.getElementById('mediaFile').click()">
+                    <input type="file" id="mediaFile" accept="image/*,video/*" hidden onchange="handleFileSelect(this.files[0])">
+                    <div class="dropzone-content" id="dropzoneContent">
+                        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p><strong>Glissez-déposez votre fichier ici</strong></p>
+                        <span class="dropzone-hint">ou <span class="browse-link">parcourez vos dossiers</span></span>
+                    </div>
+                    <div class="dropzone-preview" id="dropzonePreview" style="display: none;">
+                        <div id="previewContainer"></div>
+                        <div class="preview-info">
+                            <span id="fileName">fichier.jpg</span>
+                            <span id="fileSize">0 MB</span>
+                        </div>
+                        <button type="button" class="btn-remove" onclick="resetFileSelection(event)">Changer</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="mediaTitle">Titre de l'illustration</label>
+                    <input type="text" id="mediaTitle" placeholder="Ex: Interview Maire Valenciennes" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mediaType">Type</label>
+                        <select id="mediaType" required>
+                            <option value="photo">Photo</option>
+                            <option value="video">Vidéo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mediaCategory">Catégorie</label>
+                        <select id="mediaCategory" required>
+                            <option value="Actu">Actu</option>
+                            <option value="Sport">Sport</option>
+                            <option value="Culture">Culture</option>
+                            <option value="Portrait">Portrait</option>
+                            <option value="Événement">Événement</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="mediaTags">Mots-clés (tags)</label>
+                    <input type="text" id="mediaTags" placeholder="politique, ville...">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-submit">Téléverser dans le Drive</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div class="modal-overlay" id="lightboxModal" onclick="if(event.target === this) closeLightbox()">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+            <div id="lightboxBody"></div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="https://unpkg.com/pocketbase@0.21.5/dist/pocketbase.umd.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
